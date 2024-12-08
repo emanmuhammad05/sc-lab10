@@ -1,6 +1,12 @@
+/* Copyright (c) 2015-2016 MIT 6.005 course staff, all rights reserved.
+ * Redistribution of original or derived work requires permission of course staff.
+ */
 package expressivo;
 
+import java.util.Map;
+
 import static org.junit.Assert.*;
+
 import org.junit.Test;
 
 /**
@@ -8,89 +14,157 @@ import org.junit.Test;
  */
 public class ExpressionTest {
 
-    // Testing strategy:
-    // 1. Test the toString(), equals(), and hashCode() methods for:
-    //    - Number: positive, zero, and floating-point comparisons
-    //    - Variable: case sensitivity and different lengths
-    //    - Sum: simple and nested sums, associativity
-    //    - Product: simple and nested products, associativity
-    // 2. Test interaction between Sum and Product (e.g., Sum(Product(...))).
-    // 3. Ensure structural equality is respected.
+    // Testing strategy
+    //   toString()
+    //     Expression type: Number, Variable, Operation
+    //       Operation.op: +, *
+    //       Operation.left, right type: Number, Variable, Operation
+    //   equals(thatObject)
+    //     Expression type: Number, Variable, Operation
+    //       Number.n type: int, double
+    //       Variable.var: differs in case or doesn't
+    //       Operation.op: equals or doesn't
+    //       Operation.left, right: in the same order or not
+    //   parse(input)
+    //     Expression type: Number, Variable, Operation
+    //       Operation.op: +, *
+    //       Operation.left, right type: Number, Variable, Operation
+    //       Operations follow order of operations or don't
+    //     input is a valid expression or isn't
+    //   differentiate(variable)
+    //     Expression type: Number, Variable, Operation
+    //       Operation.op: +, *
+    //       Operation.left, right type: Number, Variable, Operation
+    //     Expression contains the variable or doesn't
+    //     Expression contains other variables or doesn't
+    //   simplify(environment)
+    //     Expression type: Number, Variable, Operation
+    //       Operation.op: +, *
+    //       Operation.left, right type: Number, Variable, Operation
+    //     environment contains all the variables or doesn't
+    //     environment contains other variables or doesn't
 
-    @Test(expected = AssertionError.class)
+    private final Expression zero = new Number(0);
+    private final Expression one = new Number(1);
+    private final Expression two = new Number(2);
+    private final Expression x = new Variable("x");
+    private final Expression y = new Variable("y");
+
+    private final Expression exp1 = new Sum(one, x);
+    private final Expression exp2 = new Product(x, one);
+    private final Expression exp3 = new Product(exp1, exp2);
+    private final Expression exp4 = new Product(x, y);
+
+    @Test(expected=AssertionError.class)
     public void testAssertionsEnabled() {
         assert false; // make sure assertions are enabled with VM argument: -ea
     }
 
-    // Tests for Number
     @Test
-    public void testNumber() {
-        Expression e1 = new Number(3);
-        Expression e2 = new Number(3.0);
-        Expression e3 = new Number(4);
-
-        assertEquals("3.0", e1.toString()); // Check string representation
-        assertEquals(e1, e2);               // Check equality
-        assertNotEquals(e1, e3);            // Different numbers should not be equal
-        assertEquals(e1.hashCode(), e2.hashCode()); // Consistent hashCode for equal objects
+    public void testToStringNumber() {
+        assertEquals("expected number", "1.0", one.toString());
     }
 
-    // Tests for Variable
     @Test
-    public void testVariable() {
-        Expression v1 = new Variable("x");
-        Expression v2 = new Variable("x");
-        Expression v3 = new Variable("y");
-        Expression v4 = new Variable("X"); // Case-sensitive
-
-        assertEquals("x", v1.toString()); // Check string representation
-        assertEquals(v1, v2);             // Variables with the same name should be equal
-        assertNotEquals(v1, v3);          // Different variables should not be equal
-        assertNotEquals(v1, v4);          // Case-sensitive: "x" != "X"
+    public void testToStringVariable() {
+        assertEquals("expected variable", "x", x.toString());
     }
 
-    // Tests for Sum
     @Test
-    public void testSum() {
-        Expression sum1 = new Sum(new Number(1), new Variable("x"));
-        Expression sum2 = new Sum(new Number(1), new Variable("x"));
-        Expression sum3 = new Sum(new Variable("x"), new Number(1));
-
-        assertEquals("(1.0 + x)", sum1.toString()); // Check string representation
-        assertEquals(sum1, sum2);                   // Structural equality
-        assertNotEquals(sum1, sum3);                // Order matters: 1 + x != x + 1
+    public void testToStringPlus() {
+        assertEquals("expected sum", "(1.0 + x)", exp1.toString());
     }
 
-    // Tests for Product
     @Test
-    public void testProduct() {
-        Expression prod1 = new Product(new Number(2), new Variable("y"));
-        Expression prod2 = new Product(new Number(2), new Variable("y"));
-        Expression prod3 = new Product(new Variable("y"), new Number(2));
-
-        assertEquals("(2.0 * y)", prod1.toString()); // Check string representation
-        assertEquals(prod1, prod2);                  // Structural equality
-        assertNotEquals(prod1, prod3);               // Order matters: 2 * y != y * 2
+    public void testToStringMultiply() {
+        assertEquals("expected product", "(x * 1.0)", exp2.toString());
     }
 
-    // Tests for nested expressions
     @Test
-    public void testNestedExpressions() {
-        Expression expr1 = new Sum(new Product(new Number(2), new Variable("x")), new Number(3));
-        Expression expr2 = new Sum(new Product(new Number(2), new Variable("x")), new Number(3));
-        Expression expr3 = new Product(new Sum(new Number(2), new Variable("x")), new Number(3));
-
-        assertEquals("((2.0 * x) + 3.0)", expr1.toString()); // Nested expression
-        assertEquals(expr1, expr2);                          // Structural equality
-        assertNotEquals(expr1, expr3);                       // Different structure
+    public void testToStringExpressions() {
+        assertEquals("expected expressions", "((1.0 + x) * (x * 1.0))", exp3.toString());
     }
 
-    // Test hashCode consistency
     @Test
-    public void testHashCodeConsistency() {
-        Expression e1 = new Sum(new Number(1), new Variable("x"));
-        Expression e2 = new Sum(new Number(1), new Variable("x"));
+    public void testEqualityNumber() {
+        Expression exp = new Number(1.0);
+        assertEquals("expected equality", one, exp);
+        assertEquals("expected equal hashcode", one.hashCode(), exp.hashCode());
+    }
 
-        assertEquals(e1.hashCode(), e2.hashCode()); // Equal expressions should have equal hash codes
+    @Test
+    public void testEqualityVariable() {
+        Expression exp = new Variable("x");
+        assertEquals("expected equality", x, exp);
+        assertEquals("expected equal hashcode", x.hashCode(), exp.hashCode());
+    }
+
+    @Test
+    public void testEqualityPlus() {
+        Expression exp = new Sum(new Number(1.0), new Variable("x"));
+        assertEquals("expected equality", exp1, exp);
+        assertEquals("expected equal hashcode", exp1.hashCode(), exp.hashCode());
+    }
+
+    @Test
+    public void testEqualityMultiply() {
+        Expression exp = new Product(new Variable("x"), new Number(1.0));
+        assertEquals("expected equality", exp2, exp);
+        assertEquals("expected equal hashcode", exp2.hashCode(), exp.hashCode());
+    }
+
+    @Test
+    public void testEqualityExpressions() {
+        Expression left = new Sum(new Number(1.0), new Variable("x"));
+        Expression right = new Product(new Variable("x"), new Number(1.0));
+        Expression exp = new Product(left, right);
+        assertEquals("expected equality", exp3, exp);
+        assertEquals("expected equal hashcode", exp3.hashCode(), exp.hashCode());
+    }
+
+    @Test
+    public void testInequalityNumber() {
+        Expression exp = new Number(2);
+        assertNotEquals("expected inequality", one, exp);
+    }
+
+    @Test
+    public void testInequalityVariable() {
+        Expression exp = new Variable("X");
+        assertNotEquals("expected inequality", x, exp);
+    }
+
+    @Test
+    public void testInequalityOperator() {
+        Expression exp = new Product(new Number(1.0), new Variable("x"));
+        assertNotEquals("expected inequality", exp1, exp);
+    }
+
+    @Test
+    public void testInequalityDifferentOrder() {
+        Expression exp = new Product(new Number(1.0), new Variable("x"));
+        assertNotEquals("expected inequality", exp2, exp);
+    }
+
+    @Test
+    public void testInequalityDifferentGrouping() {
+        Expression left = new Product(exp1, x);
+        Expression exp = new Product(left, one);
+        assertNotEquals("expected inequality", exp3, exp);
+    }
+
+   
+
+    @Test
+    public void testParseIlligal() {
+        try {
+            Expression exp = Expression.parse("3 x");
+            assert false; // should not reach here
+        }
+        catch (IllegalArgumentException e) {
+            assert true;
+        }
     }
 }
+
+    

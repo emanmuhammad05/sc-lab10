@@ -42,4 +42,11 @@ public class Sum implements Expression {
     public int hashCode() {
         return 31 * left.hashCode() + right.hashCode();
     }
+    
+    @Override
+    public Expression differentiate(String variable) {
+        Expression leftDiff = left.differentiate(variable); // Differentiate left operand
+        Expression rightDiff = right.differentiate(variable); // Differentiate right operand
+        return new Sum(leftDiff, rightDiff); // Derivative of a sum is the sum of the derivatives
+    }
 }

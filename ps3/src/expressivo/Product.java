@@ -42,4 +42,14 @@ public class Product implements Expression {
     public int hashCode() {
         return 31 * left.hashCode() + right.hashCode();
     }
+    
+    @Override
+    public Expression differentiate(String variable) {
+        Expression leftDiff = left.differentiate(variable); // Derivative of left operand
+        Expression rightDiff = right.differentiate(variable); // Derivative of right operand
+        // Apply product rule: f'(x) * g(x) + f(x) * g'(x)
+        Expression leftTerm = new Product(leftDiff, right);
+        Expression rightTerm = new Product(left, rightDiff);
+        return new Sum(leftTerm, rightTerm);
+    }
 }

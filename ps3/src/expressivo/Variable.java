@@ -41,4 +41,12 @@ public class Variable implements Expression {
     public int hashCode() {
         return name.hashCode();
     }
+    
+    public Expression differentiate(String variable) {
+        if (this.name.equals(variable)) {
+            return new Number(1); // Derivative of x with respect to x is 1
+        } else {
+            return new Number(0); // Derivative of a variable with respect to a different variable is 0
+        }
+    }
 }
